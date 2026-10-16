@@ -115,7 +115,7 @@ def make_loader(cfg, df, split, model, bank, train):
         sub = pd.concat([g.sample(min(len(g), int(n)), random_state=cfg.seed) for _, g in sub.groupby("dataset")])
     sub = sub.reset_index(drop=True)
     ds = SegDataset(
-        sub, bank, int(cfg.data.get("image_size") or model.input_size), model.image_mean, model.image_std,
+        sub, bank, int(model.input_size), model.image_mean, model.image_std,
         train=train,
         augment=Augment(cfg.data.augment) if train and cfg.data.get("augment") else None,
         negative_prob=cfg.data.get("negative_prob", 0.0) if train else 0.0,

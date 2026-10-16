@@ -81,6 +81,15 @@ def train(cfg):
     print(f"run: {run_dir}\ndevice: {device} | amp: {use_amp} | params: {total_p / 1e6:.1f}M total, "
           f"{train_p / 1e6:.2f}M trainable | train batches/epoch: {steps} | val pairs: {len(val_loader.dataset)}")
 
+    if cfg.eval.get("at_start", True):
+        # epoch 0 = pretrained weights: the reference every fine-tuned epoch must beat
+        val = evaluate(model, val_loader, device, thresholds, use_amp)
+        summary = summarize(apply_thresholds(val, choose_thresholds(val, thresholds)))
+        print(f"epoch   0 (pretrained) | {_fmt_val(summary)}")
+        with open(run_dir / "history.jsonl", "a", encoding="utf-8") as f:
+            f.write(json.dumps({"epoch": 0, "val/mIoU": summary["mIoU"],
+                                **{f"val/{c}_iou": v["iou"] for c, v in summary["per_class"].items()}}) + "\n")
+
     best, best_epoch, bad = -1.0, 0, 0
     t_start = time.time()
     for epoch in range(1, epochs + 1):

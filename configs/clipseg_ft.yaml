@@ -15,7 +15,6 @@ data:
   index_csv: work/prepared/index.csv
   split: {train: 0.70, val: 0.15, test: 0.15}   # by source photo: all Roboflow copies share one split
   min_box_size: 2               # px; thinner boxes are degenerate annotations and are dropped
-  image_size: null              # null = model's native input size (352 for CLIPSeg)
   balance_classes: true         # equal sampling of crack / taping despite the ~5:1 imbalance
   samples_per_epoch: null       # null = number of train images
   negative_prob: 0.2            # P(image paired with the OTHER class's prompt → empty target)
@@ -60,6 +59,7 @@ model:
   freeze_vision: true
   freeze_text: true
   unfreeze_last_n_vision_layers: 0
+  input_size: null              # null = 352 (pretrained size); 640 = 40×40 token grid, ~4× compute
 
 loss:
   terms:
@@ -68,7 +68,7 @@ loss:
 
 optim:
   name: adamw                   # adamw | sgd
-  lr: 1.0e-3                    # decoder (~1M params)
+  lr: 1.0e-3                    # decoder (~1M params); 1e-3 trained stably on T4 (val mIoU 0.46 → 0.58 in 20 ep)
   backbone_lr: 1.0e-5           # used only for unfrozen CLIP layers
   weight_decay: 1.0e-4
 
@@ -88,6 +88,7 @@ train:
 eval:
   batch_size: 16
   every: 1                      # evaluate every N epochs
+  at_start: true                # also evaluate the pretrained model as "epoch 0"
   negatives: true               # also score each image with the other class's prompt (leakage)
   thresholds: [0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7]
   max_images: null              # per class; set small for smoke tests

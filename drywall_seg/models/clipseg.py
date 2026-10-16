@@ -12,7 +12,7 @@ class CLIPSeg(PromptSegModel):
     backbone_prefixes = ("net.clip.",)
 
     def __init__(self, pretrained="CIDAS/clipseg-rd64-refined", freeze_vision=True, freeze_text=True,
-                 unfreeze_last_n_vision_layers=0):
+                 unfreeze_last_n_vision_layers=0, input_size=None):
         super().__init__()
         from transformers import AutoProcessor, CLIPSegForImageSegmentation
 
@@ -24,7 +24,9 @@ class CLIPSeg(PromptSegModel):
         if not isinstance(size, int):
             size = dict(size) if isinstance(size, dict) else vars(size)
             size = size.get("height") or size.get("shortest_edge")
-        self.input_size = int(size)
+        # input_size > 352 works: HF interpolates CLIP's position embeddings, and the decoder handles any
+        # square token grid (input/16 per side). 640 → 40×40 grid instead of 22×22: finer detail for thin cracks.
+        self.input_size = int(input_size or size)
         self.image_mean, self.image_std = tuple(ip.image_mean), tuple(ip.image_std)
 
         clip = self.net.clip

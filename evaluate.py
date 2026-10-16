@@ -62,8 +62,9 @@ def main():
         out = Path(args.out or run / f"eval_{args.split}")
     else:
         cfg, ckpt = load_config(args.config, args.set), args.ckpt
+        # "zeroshot_<exp>", not "<exp>-zeroshot": must not match the "<exp>-<timestamp>" run folders
         tag = "ckpt" if ckpt else "zeroshot"
-        out = Path(args.out or Path(cfg.output_dir) / f"{cfg.experiment}-{tag}" / f"eval_{args.split}")
+        out = Path(args.out or Path(cfg.output_dir) / f"{tag}_{cfg.experiment}" / f"eval_{args.split}")
     out.mkdir(parents=True, exist_ok=True)
 
     seed_everything(int(cfg.seed))
