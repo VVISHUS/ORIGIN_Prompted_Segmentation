@@ -1,0 +1,23 @@
+# environment
+venv/
+.venv/
+.env
+
+# python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# generated (rebuilt by prepare_data.py / train.py / predict.py)
+work/
+runs/
+predictions/
+*.pt
+*.pth
+*.ckpt
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

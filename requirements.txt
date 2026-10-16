@@ -1,0 +1,8 @@
+torch>=2.4
+transformers>=4.45
+numpy
+opencv-python
+pandas
+pyyaml
+tqdm
+matplotlib
