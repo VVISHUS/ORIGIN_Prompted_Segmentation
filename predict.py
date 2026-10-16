@@ -20,7 +20,7 @@ from tqdm.auto import tqdm
 
 from drywall_seg.config import load_config
 from drywall_seg.data import PromptBank, read_rgb
-from drywall_seg.inference import load_model, predict_probs
+from drywall_seg.inference import check_run_dir, load_model, predict_probs
 from drywall_seg.utils import get_device
 
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}
@@ -47,7 +47,8 @@ def main():
     args = p.parse_args()
 
     if args.run:
-        cfg, ckpt = load_config(Path(args.run) / "config.yaml", args.set), Path(args.run) / "best.pt"
+        run = check_run_dir(args.run)
+        cfg, ckpt = load_config(run / "config.yaml", args.set), run / "best.pt"
     else:
         cfg, ckpt = load_config(args.config, args.set), args.ckpt
     device = get_device(cfg.get("device", "auto"))

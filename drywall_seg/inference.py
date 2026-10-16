@@ -23,8 +23,19 @@ def load_model(cfg, ckpt=None, device="cpu"):
     return model.to(device).eval(), thresholds
 
 
-def load_run(run_dir, device="cpu", overrides=()):
+def check_run_dir(run_dir):
+    """A training run folder must hold config.yaml + best.pt; otherwise list the folders that do."""
     run_dir = Path(run_dir)
+    missing = [f for f in ("config.yaml", "best.pt") if not (run_dir / f).exists()]
+    if missing:
+        runs = sorted(p.parent.name for p in run_dir.parent.glob("*/best.pt"))
+        raise SystemExit(f"{run_dir} is not a training run (missing {', '.join(missing)}).\n"
+                         f"Training runs in {run_dir.parent}: {runs or 'none'}")
+    return run_dir
+
+
+def load_run(run_dir, device="cpu", overrides=()):
+    run_dir = check_run_dir(run_dir)
     cfg = load_config(run_dir / "config.yaml", overrides)
     model, thresholds = load_model(cfg, run_dir / "best.pt", device)
     return cfg, model, thresholds

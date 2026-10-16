@@ -18,7 +18,7 @@ import pandas as pd
 from drywall_seg.config import load_config
 from drywall_seg.data import PromptBank, make_loader, read_rgb
 from drywall_seg.evaluation import apply_thresholds, bucket_table, choose_thresholds, evaluate, summarize
-from drywall_seg.inference import load_model, predict_probs, time_inference
+from drywall_seg.inference import check_run_dir, load_model, predict_probs, time_inference
 from drywall_seg.utils import count_params, get_device, model_size_mb, save_json, seed_everything
 from drywall_seg.viz import save_panels
 
@@ -57,7 +57,7 @@ def main():
     args = p.parse_args()
 
     if args.run:
-        run = Path(args.run)
+        run = check_run_dir(args.run)
         cfg, ckpt = load_config(run / "config.yaml", args.set), run / "best.pt"
         out = Path(args.out or run / f"eval_{args.split}")
     else:
