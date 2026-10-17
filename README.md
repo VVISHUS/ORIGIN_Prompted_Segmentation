@@ -31,6 +31,21 @@ prepare_data.py / train.py / evaluate.py / predict.py / analyze_errors.py     sc
 colab_train.ipynb           the Colab notebook I trained with (with outputs)
 ```
 
+## Use the trained model (no training needed)
+
+The submission zip contains the trained model in `model/` (`best.pt` = fine-tuned part + tuned thresholds,
+`config.yaml`). From the unzipped folder:
+
+```bash
+pip install -r requirements.txt
+python predict.py --run model --images <image file or folder> --prompt "segment crack" --prompt "segment taping area" --out my_predictions
+```
+
+One mask per (image, prompt) is written to `my_predictions/` as `<image name>__<prompt>.png`
+(white = predicted area). Any image size works; the mask has the same size as the image.
+The first run downloads the base CLIPSeg (~600 MB) from Hugging Face. Works on CPU too (~0.7 s per image).
+From the repo instead of the zip, use a training run folder: `--run runs/<run-folder>`.
+
 ## Data
 
 Download both datasets from Roboflow in **COCO** format and put them in `dataset/`:
