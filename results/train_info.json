@@ -1,0 +1,12 @@
+{
+  "train_time_s": 4224.9637677669525,
+  "epochs_run": 28,
+  "best_epoch": 23,
+  "best_val_mIoU": 0.5933070403913102,
+  "params_total": 150747746,
+  "params_trainable": 1127009,
+  "model_size_mb_fp32": 575.0591049194336,
+  "checkpoint_mb": 4.315201759338379,
+  "device": "cuda",
+  "gpu": "Tesla T4"
+}

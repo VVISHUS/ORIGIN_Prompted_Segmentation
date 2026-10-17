@@ -1,0 +1,14 @@
+# Tried: same as clipseg_ft.yaml but CLIPSeg runs at 640 px (40x40 token grid instead of 22x22),
+# to give thin cracks more resolution. Converged slower on a free Colab T4, so it was not used.
+_base_: clipseg_ft.yaml
+experiment: clipseg_ft_640
+
+model:
+  input_size: 640
+
+train:
+  batch_size: 8
+  epochs: 20
+
+eval:
+  batch_size: 8

@@ -1,0 +1,101 @@
+experiment: clipseg_ft
+seed: 42
+deterministic: false
+device: auto
+output_dir: /content/drive/MyDrive/drywall_runs
+data:
+  datasets:
+    crack: dataset/cracks.v1i.coco
+    taping: dataset/Drywall-Join-Detect.v2i.coco
+  prepared_dir: work/prepared
+  index_csv: work/prepared/index.csv
+  split:
+    train: 0.7
+    val: 0.15
+    test: 0.15
+  min_box_size: 2
+  balance_classes: true
+  samples_per_epoch: null
+  negative_prob: 0.2
+  num_workers: 2
+  augment:
+    hflip: 0.5
+    vflip: 0.5
+    rot90: 0.5
+    scale_crop: 0.3
+    brightness_contrast: 0.5
+    hue_saturation: 0.3
+    blur: 0.1
+    noise: 0.2
+prompts:
+  primary_prob: 0.5
+  classes:
+    crack:
+      primary: segment crack
+      variants:
+      - segment wall crack
+      - segment surface crack
+      - segment the cracks
+      - segment hairline crack
+      - crack
+      - wall crack
+      - cracks in the wall
+    taping:
+      primary: segment taping area
+      variants:
+      - segment joint tape
+      - segment drywall seam
+      - segment drywall joint
+      - segment joint compound
+      - taping area
+      - drywall seam
+      - drywall joint tape
+model:
+  name: clipseg
+  pretrained: CIDAS/clipseg-rd64-refined
+  freeze_vision: true
+  freeze_text: true
+  unfreeze_last_n_vision_layers: 0
+  input_size: null
+loss:
+  terms:
+  - name: bce
+    weight: 1.0
+    pos_weight: 2.0
+  - name: dice
+    weight: 1.0
+optim:
+  name: adamw
+  lr: 0.001
+  backbone_lr: 1.0e-05
+  weight_decay: 0.0001
+scheduler:
+  name: cosine
+  warmup_epochs: 1
+  min_lr_ratio: 0.01
+train:
+  epochs: 40
+  batch_size: 16
+  amp: true
+  grad_clip: 1.0
+  early_stop_patience: 5
+  max_steps_per_epoch: null
+eval:
+  batch_size: 16
+  every: 1
+  at_start: true
+  negatives: true
+  thresholds:
+  - 0.2
+  - 0.25
+  - 0.3
+  - 0.35
+  - 0.4
+  - 0.45
+  - 0.5
+  - 0.55
+  - 0.6
+  - 0.65
+  - 0.7
+  max_images: null
+  timing_images: 50

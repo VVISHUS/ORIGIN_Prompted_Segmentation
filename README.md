@@ -1,46 +1,68 @@
 # Prompted Segmentation for Drywall QA
 
-One text-conditioned model that returns a binary mask for **"segment crack"** and **"segment taping area"**.
+One text-conditioned model (fine-tuned **CLIPSeg**) that returns a binary mask for
+**"segment crack"** and **"segment taping area"**.
+
+**Test results:** mIoU **0.612**, mDice **0.738** (crack IoU 0.492, taping IoU 0.732).
+Zero-shot CLIPSeg gets mIoU 0.244 on the same test set.
+
+📄 **Full report (approach, results, error analysis, failed experiments): [REPORT.md](REPORT.md)**
 
 ## Layout
 
 ```
-configs/                    experiment configs (YAML; `_base_` inheritance, CLI overrides)
-drywall_seg/                library
-  prepare.py                COCO → masks + index.csv, augmentation-aware split
-  data.py                   prompts, dataset (positive/negative pairs), loaders
-  augment.py                paired image/mask augmentations
+REPORT.md                   the report
+results/                    final metrics, error analysis, training log and config of the submitted model
+report_assets/              figures used in the report
+configs/
+  clipseg_ft.yaml           final model (all settings in one file)
+  clipseg_ft_640.yaml       tried: 640 px input (not used, see report)
+drywall_seg/                code
+  prepare.py                COCO → masks + index.csv, split by original photo
+  data.py                   prompts, dataset (positive / negative pairs), loaders
+  augment.py                image + mask augmentations
   models/                   model registry + CLIPSeg wrapper
-  losses.py                 loss registry (bce, dice, focal, tversky) + weighted sum
-  evaluation.py             IoU/Dice per threshold, threshold tuning, summaries
-  engine.py                 training loop, optimizer/scheduler factories
-  inference.py, viz.py      prediction helpers, report panels
-prepare_data.py / train.py / evaluate.py / predict.py     entry points
+  losses.py                 BCE, Dice, Focal, Tversky + weighted sum
+  evaluation.py             IoU / Dice, threshold tuning, summaries
+  engine.py                 training loop
+  inference.py, viz.py      prediction helpers, example images
+prepare_data.py / train.py / evaluate.py / predict.py / analyze_errors.py     scripts
+01_data_analysis.ipynb      data exploration
+colab_train.ipynb           the Colab notebook I trained with (with outputs)
 ```
 
-## Run (Colab / Kaggle GPU)
+## Data
+
+Download both datasets from Roboflow in **COCO** format and put them in `dataset/`:
+
+| folder | Roboflow dataset |
+|---|---|
+| `dataset/cracks.v1i.coco` | [fyp-ny1jt/cracks-3ii36](https://universe.roboflow.com/fyp-ny1jt/cracks-3ii36) (COCO segmentation) |
+| `dataset/Drywall-Join-Detect.v2i.coco` | [objectdetect-pu6rn/drywall-join-detect](https://universe.roboflow.com/objectdetect-pu6rn/drywall-join-detect), version 2 (COCO) |
+
+## Run (Colab T4 or any GPU)
 
 ```bash
 pip install -r requirements.txt
-python prepare_data.py --config configs/clipseg_ft.yaml                 # masks + split (seed 42)
-python evaluate.py     --config configs/clipseg_ft.yaml                 # zero-shot baseline
-python train.py        --config configs/clipseg_ft.yaml                 # fine-tune
-python evaluate.py     --run runs/<run-dir>                             # test metrics, tables, panels
-python predict.py      --run runs/<run-dir> --split test                # <id>__segment_crack.png masks
+python prepare_data.py --config configs/clipseg_ft.yaml                     # masks + split (seed 42)
+python evaluate.py     --config configs/clipseg_ft.yaml                     # zero-shot baseline
+python train.py        --config configs/clipseg_ft.yaml --set train.epochs=40
+python evaluate.py     --run runs/<run-folder>                              # test metrics, tables, examples
+python analyze_errors.py --eval-dir runs/<run-folder>/eval_test             # error analysis
+python predict.py      --run runs/<run-folder> --split test                 # <id>__segment_crack.png masks
 ```
 
-Override any config value: `--set train.epochs=30 optim.lr=5e-4 model.unfreeze_last_n_vision_layers=3`.
-Smoke test (CPU, ~1 min): `--set train.epochs=1 train.max_steps_per_epoch=2 train.batch_size=4 eval.max_images=6 data.num_workers=0`.
+Change any setting from the command line, e.g. `--set train.epochs=30 optim.lr=5e-4`.
+Quick CPU check (~1 min): `--set train.epochs=1 train.max_steps_per_epoch=2 train.batch_size=4 eval.max_images=6 data.num_workers=0`.
 
-## Extending
+## Seeds and reproducibility
 
-- **Model**: subclass `PromptSegModel` (`forward(pixel_values, prompts) -> logits [B,1,h,w]`), decorate with
-  `@register("name")`, import it in `drywall_seg/models/__init__.py`, set `model.name: name`.
-- **Loss**: add a class with `@register("name")` in `losses.py`, list it under `loss.terms`.
+- Seed **42** (config `seed`) controls the split, sampling, augmentation and initialisation.
+- `deterministic: false` for speed, so GPU runs differ slightly: two runs gave best val mIoU 0.591 and 0.593.
+- Every run folder saves its full `config.yaml`, `history.jsonl` (every epoch), `train_info.json`
+  (train time, sizes) and `best.pt` (trained decoder weights + tuned thresholds, 4.3 MB).
 
-## Reproducibility
+## Prediction masks
 
-Seed `42` (config `seed`) drives the split, sampling, augmentation and initialisation. Set
-`deterministic: true` for bit-reproducible GPU runs (slower). Each run saves its resolved
-`config.yaml`, `history.jsonl`, `train_info.json` (train time, params) and `best.pt`
-(fine-tuned weights + val-tuned thresholds).
+`predict.py` writes one PNG per (image, prompt): single channel, same size as the image, values {0, 255},
+named `<image_id>__segment_crack.png` / `<image_id>__segment_taping_area.png`.
